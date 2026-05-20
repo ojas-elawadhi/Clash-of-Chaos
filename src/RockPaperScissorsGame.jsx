@@ -19,22 +19,19 @@ const COOLDOWN_TICK_MS = 100;
 
 const PARTY_CONFIG = {
   cjp: {
-    label: "CJP",
-    name: "Cockroach Janta Party",
     asset: "cjp.svg",
     color: "#5c3417",
+    glow: "#f59e0b",
   },
   bjp: {
-    label: "BJP",
-    name: "Bharti Chanta Party",
     asset: "bjp.svg",
     color: "#f0861d",
+    glow: "#fb923c",
   },
   congress: {
-    label: "Congress",
-    name: "Congress",
     asset: "congress.svg",
     color: "#2d8f5b",
+    glow: "#10b981",
   },
 };
 
@@ -129,9 +126,9 @@ const STARTING_ZONES = {
 };
 
 const DEFEATS = {
-  cjp: "congress",
-  congress: "bjp",
-  bjp: "cjp",
+  cjp: "bjp",
+  congress: "cjp",
+  bjp: "congress",
 };
 
 const createEmptyCounts = () =>
@@ -209,6 +206,7 @@ const RockPaperScissorsGame = () => {
   const [images, setImages] = useState(createInitialImages);
   const [gameOver, setGameOver] = useState(null);
   const [started, setStarted] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [powerUpUses, setPowerUpUses] = useState(createEmptyPowerUpUses);
   const [powerUpCooldownActive, setPowerUpCooldownActive] = useState(false);
   const [cooldownRemainingMs, setCooldownRemainingMs] = useState(0);
@@ -223,9 +221,15 @@ const RockPaperScissorsGame = () => {
   const powerUpCooldownIntervalRef = useRef(null);
   const powerUpCooldownEndsAtRef = useRef(0);
   const speedBoostTimerRef = useRef(null);
+  const speedBoostEndsAtRef = useRef(0);
   const magnetTimerRef = useRef(null);
+  const magnetEndsAtRef = useRef(0);
   const shuffleFlashTimerRef = useRef(null);
   const burstTimerRef = useRef(null);
+  const pausedAtRef = useRef(0);
+  const pausedCooldownRemainingRef = useRef(0);
+  const pausedSpeedBoostRemainingRef = useRef(0);
+  const pausedMagnetRemainingRef = useRef(0);
 
   const isColliding = (a, b) => {
     const dx = a.x - b.x;
@@ -244,8 +248,75 @@ const RockPaperScissorsGame = () => {
     };
   }, []);
 
+  const startSharedCooldown = (durationMs = GLOBAL_COOLDOWN_MS) => {
+    if (durationMs <= 0) {
+      setPowerUpCooldownActive(false);
+      setCooldownRemainingMs(0);
+      powerUpCooldownEndsAtRef.current = 0;
+      clearTimeout(powerUpCooldownTimerRef.current);
+      clearInterval(powerUpCooldownIntervalRef.current);
+      return;
+    }
+
+    clearTimeout(powerUpCooldownTimerRef.current);
+    clearInterval(powerUpCooldownIntervalRef.current);
+    powerUpCooldownEndsAtRef.current = Date.now() + durationMs;
+    setPowerUpCooldownActive(true);
+    setCooldownRemainingMs(durationMs);
+
+    powerUpCooldownIntervalRef.current = setInterval(() => {
+      const remaining = Math.max(0, powerUpCooldownEndsAtRef.current - Date.now());
+      setCooldownRemainingMs(remaining);
+
+      if (remaining === 0) {
+        clearInterval(powerUpCooldownIntervalRef.current);
+      }
+    }, COOLDOWN_TICK_MS);
+
+    powerUpCooldownTimerRef.current = setTimeout(() => {
+      setPowerUpCooldownActive(false);
+      setCooldownRemainingMs(0);
+      powerUpCooldownEndsAtRef.current = 0;
+      clearInterval(powerUpCooldownIntervalRef.current);
+    }, durationMs);
+  };
+
+  const startSpeedBoost = (durationMs = SPEED_BOOST_MS) => {
+    if (durationMs <= 0) {
+      setSpeedBoostActive(false);
+      speedBoostEndsAtRef.current = 0;
+      clearTimeout(speedBoostTimerRef.current);
+      return;
+    }
+
+    clearTimeout(speedBoostTimerRef.current);
+    speedBoostEndsAtRef.current = Date.now() + durationMs;
+    setSpeedBoostActive(true);
+    speedBoostTimerRef.current = setTimeout(() => {
+      setSpeedBoostActive(false);
+      speedBoostEndsAtRef.current = 0;
+    }, durationMs);
+  };
+
+  const startMagnet = (durationMs = MAGNET_MS) => {
+    if (durationMs <= 0) {
+      setMagnetActive(false);
+      magnetEndsAtRef.current = 0;
+      clearTimeout(magnetTimerRef.current);
+      return;
+    }
+
+    clearTimeout(magnetTimerRef.current);
+    magnetEndsAtRef.current = Date.now() + durationMs;
+    setMagnetActive(true);
+    magnetTimerRef.current = setTimeout(() => {
+      setMagnetActive(false);
+      magnetEndsAtRef.current = 0;
+    }, durationMs);
+  };
+
   useEffect(() => {
-    if (!started || gameOver) return undefined;
+    if (!started || gameOver || paused) return undefined;
 
     const updatePositions = () => {
       setImages((prevImages) => {
@@ -350,30 +421,7 @@ const RockPaperScissorsGame = () => {
 
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [gameOver, magnetActive, speedBoostActive, started]);
-
-  const startSharedCooldown = () => {
-    clearTimeout(powerUpCooldownTimerRef.current);
-    clearInterval(powerUpCooldownIntervalRef.current);
-    powerUpCooldownEndsAtRef.current = Date.now() + GLOBAL_COOLDOWN_MS;
-    setPowerUpCooldownActive(true);
-    setCooldownRemainingMs(GLOBAL_COOLDOWN_MS);
-
-    powerUpCooldownIntervalRef.current = setInterval(() => {
-      const remaining = Math.max(0, powerUpCooldownEndsAtRef.current - Date.now());
-      setCooldownRemainingMs(remaining);
-
-      if (remaining === 0) {
-        clearInterval(powerUpCooldownIntervalRef.current);
-      }
-    }, COOLDOWN_TICK_MS);
-
-    powerUpCooldownTimerRef.current = setTimeout(() => {
-      setPowerUpCooldownActive(false);
-      setCooldownRemainingMs(0);
-      clearInterval(powerUpCooldownIntervalRef.current);
-    }, GLOBAL_COOLDOWN_MS);
-  };
+  }, [gameOver, magnetActive, paused, speedBoostActive, started]);
 
   const registerPowerUpUse = (powerUp) => {
     const nextUses = {
@@ -409,19 +457,11 @@ const RockPaperScissorsGame = () => {
   };
 
   const triggerSpeedBoost = () => {
-    clearTimeout(speedBoostTimerRef.current);
-    setSpeedBoostActive(true);
-    speedBoostTimerRef.current = setTimeout(() => {
-      setSpeedBoostActive(false);
-    }, SPEED_BOOST_MS);
+    startSpeedBoost();
   };
 
   const triggerMagnet = () => {
-    clearTimeout(magnetTimerRef.current);
-    setMagnetActive(true);
-    magnetTimerRef.current = setTimeout(() => {
-      setMagnetActive(false);
-    }, MAGNET_MS);
+    startMagnet();
   };
 
   const shuffleAllObjects = () => {
@@ -451,7 +491,7 @@ const RockPaperScissorsGame = () => {
   };
 
   const activatePowerUp = (powerUp) => {
-    if (gameOver || powerUpCooldownActive) return;
+    if (gameOver || paused || powerUpCooldownActive) return;
     if (powerUpUsesRef.current[powerUp] >= POWER_UP_CONFIG[powerUp].maxUses) {
       return;
     }
@@ -478,6 +518,55 @@ const RockPaperScissorsGame = () => {
     registerPowerUpUse(powerUp);
   };
 
+  const togglePause = () => {
+    if (!started || gameOver) return;
+
+    if (!paused) {
+      const now = Date.now();
+      pausedAtRef.current = now;
+      pausedCooldownRemainingRef.current = powerUpCooldownActive
+        ? Math.max(0, powerUpCooldownEndsAtRef.current - now)
+        : 0;
+      pausedSpeedBoostRemainingRef.current = speedBoostActive
+        ? Math.max(0, speedBoostEndsAtRef.current - now)
+        : 0;
+      pausedMagnetRemainingRef.current = magnetActive
+        ? Math.max(0, magnetEndsAtRef.current - now)
+        : 0;
+
+      cancelAnimationFrame(animationRef.current);
+      clearTimeout(powerUpCooldownTimerRef.current);
+      clearInterval(powerUpCooldownIntervalRef.current);
+      clearTimeout(speedBoostTimerRef.current);
+      clearTimeout(magnetTimerRef.current);
+      setPaused(true);
+      setCooldownRemainingMs(pausedCooldownRemainingRef.current);
+      return;
+    }
+
+    const pausedDuration = Date.now() - pausedAtRef.current;
+
+    setImages((prevImages) =>
+      prevImages.map((img) => ({
+        ...img,
+        spawnedAt: img.spawnedAt ? img.spawnedAt + pausedDuration : img.spawnedAt,
+        protectedUntil: img.protectedUntil
+          ? img.protectedUntil + pausedDuration
+          : img.protectedUntil,
+      }))
+    );
+
+    startSharedCooldown(pausedCooldownRemainingRef.current);
+    startSpeedBoost(pausedSpeedBoostRemainingRef.current);
+    startMagnet(pausedMagnetRemainingRef.current);
+
+    pausedAtRef.current = 0;
+    pausedCooldownRemainingRef.current = 0;
+    pausedSpeedBoostRemainingRef.current = 0;
+    pausedMagnetRemainingRef.current = 0;
+    setPaused(false);
+  };
+
   const restartGame = () => {
     cancelAnimationFrame(animationRef.current);
     clearTimeout(powerUpCooldownTimerRef.current);
@@ -489,11 +578,18 @@ const RockPaperScissorsGame = () => {
     setImages(createInitialImages());
     setGameOver(null);
     setStarted(false);
+    setPaused(false);
     nextIdRef.current = INITIAL_PER_TYPE;
     powerUpUsesRef.current = createEmptyPowerUpUses();
     setPowerUpUses(createEmptyPowerUpUses());
     setPowerUpCooldownActive(false);
     powerUpCooldownEndsAtRef.current = 0;
+    speedBoostEndsAtRef.current = 0;
+    magnetEndsAtRef.current = 0;
+    pausedAtRef.current = 0;
+    pausedCooldownRemainingRef.current = 0;
+    pausedSpeedBoostRemainingRef.current = 0;
+    pausedMagnetRemainingRef.current = 0;
     setCooldownRemainingMs(0);
     setSpeedBoostActive(false);
     setMagnetActive(false);
@@ -537,7 +633,6 @@ const RockPaperScissorsGame = () => {
                   className="score-card__icon"
                 />
                 <div className="score-card__meta">
-                  <span className="score-card__label">{PARTY_CONFIG[type].label}</span>
                   <span className="score-card__count">{counts[type]}</span>
                 </div>
               </div>
@@ -579,7 +674,8 @@ const RockPaperScissorsGame = () => {
                 >
                   <img
                     src={`/${PARTY_CONFIG[img.type].asset}`}
-                    alt={PARTY_CONFIG[img.type].name}
+                    alt=""
+                    aria-hidden="true"
                     className="rps-image"
                   />
                 </div>
@@ -613,24 +709,74 @@ const RockPaperScissorsGame = () => {
           )}
 
           {started && !gameOver && (
-            <button
-              type="button"
-              className="arena-restart"
-              onClick={restartGame}
-              aria-label="Restart game"
-              title="Restart"
-            >
-              <svg
-                className="arena-restart__icon"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+            <div className="arena-controls">
+              <button
+                type="button"
+                className={`arena-control arena-control--pause${
+                  paused ? " is-active" : ""
+                }`}
+                onClick={togglePause}
+                aria-label={paused ? "Resume game" : "Pause game"}
+                title={paused ? "Resume" : "Pause"}
               >
-                <path
-                  d="M12 5V2L7 6l5 4V7a5 5 0 1 1-4.9 6h-2.02A7 7 0 1 0 12 5z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
+                {paused ? (
+                  <svg
+                    className="arena-control__icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M8 5.14v13.72c0 .74.8 1.2 1.44.82l10.8-6.86a.97.97 0 0 0 0-1.64L9.44 4.32A.96.96 0 0 0 8 5.14z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="arena-control__icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M7 5h3v14H7zm7 0h3v14h-3z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="button"
+                className="arena-control arena-control--restart"
+                onClick={restartGame}
+                aria-label="Restart game"
+                title="Restart"
+              >
+                <svg
+                  className="arena-control__icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 5V2L7 6l5 4V7a5 5 0 1 1-4.9 6h-2.02A7 7 0 1 0 12 5z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {started && paused && !gameOver && (
+            <div className="pause-overlay">
+              <div className="pause-overlay__content">
+                <span className="pause-overlay__eyebrow">Match Paused</span>
+                <button
+                  type="button"
+                  className="start-button"
+                  onClick={togglePause}
+                >
+                  Resume
+                </button>
+              </div>
+            </div>
           )}
 
           {!started && !gameOver && (
@@ -664,6 +810,7 @@ const RockPaperScissorsGame = () => {
               (powerUp === "magnet" && magnetActive);
             const isDisabled =
               gameOver ||
+              paused ||
               powerUpCooldownActive ||
               usesLeft <= 0 ||
               !started;
@@ -705,14 +852,23 @@ const RockPaperScissorsGame = () => {
 
       {gameOver && (
         <div className="popup" role="dialog" aria-modal="true">
-          <div className="popup-content">
+          <div
+            className="popup-content"
+            style={{
+              "--winner-color": PARTY_CONFIG[gameOver.winner].color,
+              "--winner-glow": PARTY_CONFIG[gameOver.winner].glow,
+            }}
+          >
             <span className="popup-content__eyebrow">Game Over</span>
-            <h2 style={{ color: PARTY_CONFIG[gameOver.winner].color }}>
-              {PARTY_CONFIG[gameOver.winner].label} wins!
-            </h2>
-            <p>
-              {PARTY_CONFIG[gameOver.winner].name} is the last party standing.
-            </p>
+            <div className="popup-content__winner">
+              <img
+                src={`/${PARTY_CONFIG[gameOver.winner].asset}`}
+                alt=""
+                aria-hidden="true"
+              />
+            </div>
+            <h2 className="popup-content__title">Victory!</h2>
+            <p>The last one standing.</p>
             <button
               type="button"
               className="start-button"
