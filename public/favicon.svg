@@ -1,0 +1,73 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CockroachClash">
+  <defs>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0861d" />
+      <stop offset="45%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#6c8cff" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="62%" r="55%">
+      <stop offset="0%" stop-color="#f0861d" stop-opacity="0.7" />
+      <stop offset="40%" stop-color="#ef4444" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#0a0f1c" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a3e16" />
+      <stop offset="60%" stop-color="#5a2d10" />
+      <stop offset="100%" stop-color="#3d1c07" />
+    </linearGradient>
+    <radialGradient id="spark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff4c4" />
+      <stop offset="40%" stop-color="#f0861d" />
+      <stop offset="100%" stop-color="#f0861d" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Gradient outer ring -->
+  <circle cx="32" cy="32" r="31" fill="url(#ring)" />
+  <!-- Dark navy plate -->
+  <circle cx="32" cy="32" r="29" fill="#0e1428" />
+  <!-- Warm radial glow inside -->
+  <circle cx="32" cy="32" r="29" fill="url(#glow)" />
+
+  <!-- Antennae -->
+  <path d="M28 19 Q22 13 16 11" stroke="#1c0b03" stroke-width="2.4" fill="none" stroke-linecap="round" />
+  <path d="M36 19 Q42 13 48 11" stroke="#1c0b03" stroke-width="2.4" fill="none" stroke-linecap="round" />
+
+  <!-- Six bold legs -->
+  <g stroke="#1c0b03" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M24 25 Q18 23 14 21" />
+    <path d="M40 25 Q46 23 50 21" />
+    <path d="M22 33 Q15 34 11 33" />
+    <path d="M42 33 Q49 34 53 33" />
+    <path d="M24 41 Q18 45 14 49" />
+    <path d="M40 41 Q46 45 50 49" />
+  </g>
+
+  <!-- Body silhouette -->
+  <path
+    d="M32 17
+       C 25 17, 20 20, 20 26
+       C 20 29, 21 31, 23 32
+       C 21 34, 20 38, 20 43
+       C 20 50, 25 54, 32 54
+       C 39 54, 44 50, 44 43
+       C 44 38, 43 34, 41 32
+       C 43 31, 44 29, 44 26
+       C 44 20, 39 17, 32 17 Z"
+    fill="url(#bodyGrad)"
+  />
+
+  <!-- Pronotum highlight band -->
+  <ellipse cx="32" cy="24" rx="7" ry="2.6" fill="#864a1c" opacity="0.9" />
+  <ellipse cx="32" cy="22.5" rx="4" ry="1.2" fill="#a66427" opacity="0.7" />
+
+  <!-- Wing divide -->
+  <path d="M32 31 L 32 53" stroke="#1c0b03" stroke-width="1.2" stroke-linecap="round" />
+
+  <!-- Head -->
+  <ellipse cx="32" cy="19.5" rx="3" ry="2.5" fill="#1c0b03" />
+
+  <!-- Spark glow on left antenna tip -->
+  <circle cx="16" cy="11" r="4.5" fill="url(#spark)" />
+  <circle cx="16" cy="11" r="1.7" fill="#fff4c4" />
+</svg>

@@ -1,0 +1,67 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cockroach">
+  <defs>
+    <radialGradient id="spark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff4c4" />
+      <stop offset="35%" stop-color="#f0861d" />
+      <stop offset="100%" stop-color="#f0861d" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a3e16" />
+      <stop offset="60%" stop-color="#5a2d10" />
+      <stop offset="100%" stop-color="#3d1c07" />
+    </linearGradient>
+  </defs>
+
+  <!-- Antennae -->
+  <path d="M27 13 Q19 5 7 2" stroke="#2a1408" stroke-width="2" fill="none" stroke-linecap="round" />
+  <path d="M37 13 Q45 5 57 2" stroke="#2a1408" stroke-width="2" fill="none" stroke-linecap="round" />
+
+  <!-- Six legs -->
+  <g stroke="#2a1408" stroke-width="2.6" fill="none" stroke-linecap="round">
+    <path d="M22 21 Q13 19 5 13" />
+    <path d="M42 21 Q51 19 59 13" />
+    <path d="M20 33 Q10 34 1 32" />
+    <path d="M44 33 Q54 34 63 32" />
+    <path d="M22 43 Q12 49 5 57" />
+    <path d="M42 43 Q52 49 59 57" />
+  </g>
+
+  <!-- Body silhouette: head + pronotum + abdomen -->
+  <path
+    d="M32 9
+       C 24 9, 18 12, 18 22
+       C 18 26, 19 28, 21 29
+       C 18 32, 17 38, 17 44
+       C 17 54, 24 60, 32 60
+       C 40 60, 47 54, 47 44
+       C 47 38, 46 32, 43 29
+       C 45 28, 46 26, 46 22
+       C 46 12, 40 9, 32 9 Z"
+    fill="url(#bodyGrad)"
+  />
+
+  <!-- Pronotum (shield) shading -->
+  <ellipse cx="32" cy="19" rx="9" ry="3.4" fill="#864a1c" opacity="0.85" />
+  <ellipse cx="32" cy="17.5" rx="5" ry="1.4" fill="#a66427" opacity="0.7" />
+
+  <!-- Wing divide -->
+  <path d="M32 28 L 32 58" stroke="#1c0b03" stroke-width="0.9" stroke-linecap="round" />
+
+  <!-- Abdomen segment hints -->
+  <path d="M22 38 Q32 40 42 38" stroke="#2a1408" stroke-width="0.6" fill="none" opacity="0.65" />
+  <path d="M22 46 Q32 48 42 46" stroke="#2a1408" stroke-width="0.6" fill="none" opacity="0.6" />
+
+  <!-- Subtle warm rim light on the right edge of the body -->
+  <path
+    d="M46 22 C 46 26, 45 28, 43 29 C 46 32, 47 38, 47 44 C 47 50, 45 55, 41 58"
+    stroke="#c87a32" stroke-width="0.8" fill="none" opacity="0.55" stroke-linecap="round"
+  />
+
+  <!-- Head -->
+  <ellipse cx="32" cy="13" rx="3.2" ry="2.8" fill="#1c0b03" />
+
+  <!-- Spark glow halo on left antenna tip -->
+  <circle cx="7" cy="2" r="5" fill="url(#spark)" />
+  <!-- Solid spark core -->
+  <circle cx="7" cy="2" r="1.8" fill="#fff4c4" />
+</svg>

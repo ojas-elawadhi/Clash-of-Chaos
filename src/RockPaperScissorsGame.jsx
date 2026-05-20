@@ -10,7 +10,7 @@ const SPAWN_PROTECTION_MS = 1000;
 const SHUFFLE_PROTECTION_MS = 750;
 const GLOBAL_COOLDOWN_MS = 3000;
 const SPEED_BOOST_MS = 3000;
-const SPEED_BOOST_MULTIPLIER = 2;
+const SPEED_BOOST_MULTIPLIER = 3;
 const MAGNET_MS = 2000;
 const MAGNET_PULL_STRENGTH = 0.7;
 const SHUFFLE_FLASH_MS = 500;
@@ -607,8 +607,15 @@ const RockPaperScissorsGame = () => {
     <div className="game-shell">
       <header className="app-header">
         <div className="brand">
-          <span className="brand__eyebrow">Battle Royale</span>
-          <h1>Clash of Chaos</h1>
+          <div className="brand__mark" aria-hidden="true">
+            <div className="brand__mark-inner">
+              <img src="/cockroach.svg" alt="" />
+            </div>
+          </div>
+          <div className="brand__text">
+            <span className="brand__eyebrow">Battle Royale</span>
+            <h1>CockroachClash</h1>
+          </div>
         </div>
       </header>
 
@@ -696,7 +703,7 @@ const RockPaperScissorsGame = () => {
                     <span className="powerup-burst__icon">
                       {POWER_UP_ICONS.speed}
                     </span>
-                    <span>2× SPEED</span>
+                    <span>3× SPEED</span>
                   </>
                 )}
                 {burst.type === "shuffle" && (
@@ -783,7 +790,7 @@ const RockPaperScissorsGame = () => {
             <div className="start-overlay">
               <div className="start-overlay__content">
                 <span className="start-overlay__eyebrow">New Round</span>
-                <h2 className="start-overlay__title">Clash of Chaos</h2>
+                <h2 className="start-overlay__title">CockroachClash</h2>
                 <p className="start-overlay__tagline">
                   {totalPieces} pieces. {TYPES.length} parties. One ruler.
                 </p>
