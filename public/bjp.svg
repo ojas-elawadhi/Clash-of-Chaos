@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">Bharti Chanta Party symbol</title>
+  <desc id="desc">An orange lotus icon for the Bharti Chanta Party.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 92c6-8 9-18 9-27H51c0 9 3 19 9 27Z" fill="#2f8f57" stroke="#216640" stroke-width="4" />
+    <path d="M36 64c10-2 17-10 20-22-14 0-25 10-26 23 2 0 4 0 6-1Z" fill="#f3911d" stroke="#be6712" stroke-width="4" />
+    <path d="M84 64c-10-2-17-10-20-22 14 0 25 10 26 23-2 0-4 0-6-1Z" fill="#f3911d" stroke="#be6712" stroke-width="4" />
+    <path d="M60 36c-9 7-14 18-13 31 8-2 13-8 13-16 0 8 5 14 13 16 1-13-4-24-13-31Z" fill="#ffad3d" stroke="#be6712" stroke-width="4" />
+    <path d="M48 74c5 5 12 8 20 8s15-3 20-8" stroke="#216640" stroke-width="4" />
+  </g>
+</svg>

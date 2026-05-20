@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">Congress symbol</title>
+  <desc id="desc">A stylized hand symbol for Congress.</desc>
+  <g fill="none" stroke="#123d8b" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+    <path d="M41 91c-7-10-8-20-4-28l6-11V33c0-6 8-8 11-2v20-28c0-6 9-8 12-2v28-26c0-6 9-7 11-1v29-22c0-5 8-6 10-1v35c0 9-4 18-10 24l-8 8H52c-4 0-8-2-11-5Z" fill="#f4f1e8" />
+    <path d="M48 98h31" />
+    <path d="M51 43v19M63 34v29M75 35v28M87 44v19" />
+    <path d="M47 82c8 5 19 7 30 5" />
+  </g>
+</svg>

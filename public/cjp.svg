@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">Cockroach Janta Party symbol</title>
+  <desc id="desc">A stylized cockroach icon for the Cockroach Janta Party.</desc>
+  <g fill="none" stroke="#44220d" stroke-linecap="round" stroke-linejoin="round" stroke-width="5">
+    <path d="M39 36 24 24M81 36l15-12M36 56 16 50M84 56l20-6M36 74 17 82M84 74l19 8" />
+    <path d="M50 34c3-8 17-8 20 0M44 42c0-13 32-13 32 0v12c0 10-7 18-16 18s-16-8-16-18V42Z" fill="#6e3a14" />
+    <path d="M47 60c4 5 22 5 26 0" />
+    <path d="M55 72v18M65 72v18" />
+    <ellipse cx="60" cy="90" rx="18" ry="16" fill="#7c451a" />
+    <path d="M52 84c4 3 12 3 16 0" />
+  </g>
+</svg>

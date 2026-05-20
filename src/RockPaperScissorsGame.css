@@ -79,19 +79,19 @@
   animation: spawn-ring 0.95s ease-out;
 }
 
-.rps-piece--rock {
-  --spawn-glow-soft: rgba(77, 145, 255, 0.36);
-  --spawn-glow-strong: rgba(77, 145, 255, 0.8);
+.rps-piece--cjp {
+  --spawn-glow-soft: rgba(92, 52, 23, 0.34);
+  --spawn-glow-strong: rgba(92, 52, 23, 0.78);
 }
 
-.rps-piece--paper {
-  --spawn-glow-soft: rgba(255, 184, 77, 0.36);
-  --spawn-glow-strong: rgba(255, 184, 77, 0.82);
+.rps-piece--bjp {
+  --spawn-glow-soft: rgba(240, 134, 29, 0.34);
+  --spawn-glow-strong: rgba(240, 134, 29, 0.84);
 }
 
-.rps-piece--scissors {
-  --spawn-glow-soft: rgba(255, 99, 132, 0.34);
-  --spawn-glow-strong: rgba(255, 99, 132, 0.8);
+.rps-piece--congress {
+  --spawn-glow-soft: rgba(45, 143, 91, 0.34);
+  --spawn-glow-strong: rgba(45, 143, 91, 0.8);
 }
 
 /* Styling for each image */
