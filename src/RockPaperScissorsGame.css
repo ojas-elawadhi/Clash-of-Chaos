@@ -1,83 +1,388 @@
-.game-wrapper {
-  text-align: center;
-  font-family: Arial, sans-serif;
+/* ============================================================
+   Clash of Chaos — game UI
+   Single-screen, responsive (mobile + desktop), no page scroll.
+   Game arena uses a fixed 600x600 internal coordinate system,
+   scaled to fit with a CSS transform.
+   ============================================================ */
+
+:root {
+  --color-bg-1: #0f1730;
+  --color-bg-2: #050814;
+  --color-text: #f5f7fb;
+  --color-text-dim: #9ba6bc;
+  --color-text-muted: #6b7588;
+  --color-panel: rgba(255, 255, 255, 0.04);
+  --color-panel-strong: rgba(255, 255, 255, 0.07);
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-accent: #6c8cff;
+  --color-accent-strong: #4f6cff;
+  --color-success: #2bb673;
+  --color-cjp: #c08a5b;
+  --color-bjp: #f0861d;
+  --color-congress: #2d8f5b;
+  --shadow-panel: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
 }
 
-.game-header {
+/* ----------------------------------------------------------
+   Shell — fills the viewport, centers the panel, no scroll.
+   ---------------------------------------------------------- */
+.game-shell {
+  position: fixed;
+  inset: 0;
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 10px;
-  font-size: 1.2rem;
+  flex-direction: column;
+  padding: clamp(10px, 2vmin, 24px) clamp(12px, 2.6vmin, 32px);
+  background:
+    radial-gradient(circle at 20% -10%, rgba(108, 140, 255, 0.18) 0%, rgba(108, 140, 255, 0) 50%),
+    radial-gradient(circle at 100% 100%, rgba(240, 134, 29, 0.12) 0%, rgba(240, 134, 29, 0) 55%),
+    linear-gradient(160deg, var(--color-bg-1) 0%, var(--color-bg-2) 100%);
+  color: var(--color-text);
+  overflow: hidden;
 }
 
-.count {
-  font-weight: bold;
-}
-
-.spawn-controls {
+/* ----------------------------------------------------------
+   Top-bar header — branding on the left, restart on the right.
+   ---------------------------------------------------------- */
+.app-header {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  padding-bottom: clamp(8px, 1.6vmin, 14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.powerup-button--active {
-  background: #1f7a45;
+.brand {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1;
+  min-width: 0;
+}
+
+.brand__eyebrow {
+  font-size: clamp(9px, 1.25vmin, 11px);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: clamp(18px, 3.2vmin, 28px);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  background: linear-gradient(135deg, #f0861d 0%, #ef4444 45%, #6c8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ----------------------------------------------------------
+   Main panel — fills remaining height under the header.
+   Asymmetric vertical gaps:
+     scoreboard → arena: medium
+     arena → power-ups:  very small
+     power-ups → status: small
+   Leftover height splits between above-scoreboard and below-status.
+   ---------------------------------------------------------- */
+.game-shell__panel {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  padding: clamp(6px, 1.4vmin, 14px) 0;
+}
+
+.game-shell__panel > .scoreboard {
+  margin-top: auto;
+  margin-bottom: clamp(8px, 1.6vmin, 16px);
+}
+
+.game-shell__panel > .play-row {
+  margin-bottom: auto;
+}
+
+/* Play row wraps the arena and the power-up rail.
+   Default (mobile/tablet): stacked column (arena on top, power-ups below).
+   Wide screens: horizontal — arena on the left, vertical power-up rail on the right. */
+.play-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.2vmin, 12px);
+  width: 100%;
+}
+
+.ghost-button {
+  padding: clamp(6px, 1.2vmin, 9px) clamp(12px, 2vmin, 16px);
+  font-size: clamp(11px, 1.5vmin, 13px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.ghost-button:hover {
+  background: var(--color-panel-strong);
+  border-color: var(--color-border-strong);
+}
+
+.ghost-button:active {
+  transform: scale(0.97);
+}
+
+/* ----------------------------------------------------------
+   Scoreboard
+   ---------------------------------------------------------- */
+.scoreboard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 1.2vmin, 12px);
+}
+
+.score-card {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1.4vmin, 12px);
+  padding: clamp(8px, 1.5vmin, 12px) clamp(10px, 1.8vmin, 16px);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  transition: opacity 0.25s, transform 0.25s, border-color 0.25s;
+  min-width: 0;
+}
+
+.score-card--cjp { border-left-color: var(--color-cjp); }
+.score-card--bjp { border-left-color: var(--color-bjp); }
+.score-card--congress { border-left-color: var(--color-congress); }
+
+.score-card.is-leader {
+  background: var(--color-panel-strong);
+  border-color: rgba(255, 255, 255, 0.16);
+  border-left-width: 3px;
+}
+
+.score-card.is-eliminated {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+.score-card__icon {
+  width: clamp(26px, 4.2vmin, 38px);
+  height: clamp(26px, 4.2vmin, 38px);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 4px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.score-card__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.score-card__label {
+  font-size: clamp(10px, 1.3vmin, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-dim);
+  line-height: 1;
+}
+
+.score-card__count {
+  font-size: clamp(18px, 3vmin, 26px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  margin-top: 2px;
+  color: var(--color-text);
+}
+
+/* ----------------------------------------------------------
+   Arena — square, scales with viewport. The internal viewport
+   stays 600x600 so all game physics constants keep working.
+   ---------------------------------------------------------- */
+.arena-frame {
+  --arena-size: min(720px, 92vmin, calc(100dvh - 260px));
+  position: relative;
+  width: var(--arena-size);
+  height: var(--arena-size);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-panel);
+  flex-shrink: 0;
+}
+
+.arena-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 600px;
+  height: 600px;
+  transform-origin: top left;
+  transform: scale(calc(var(--arena-size) / 600px));
+}
+
+/* Floating restart button — sits at the top-right of the arena
+   while a game is in progress. */
+.arena-restart {
+  position: absolute;
+  top: clamp(8px, 1.6vmin, 14px);
+  right: clamp(8px, 1.6vmin, 14px);
+  width: clamp(32px, 5vmin, 38px);
+  height: clamp(32px, 5vmin, 38px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 48, 0.28);
   color: #fff;
-  border-color: #14522e;
-  box-shadow: 0 0 0 3px rgba(31, 122, 69, 0.2);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+  z-index: 5;
 }
 
-.spawn-controls button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.arena-restart:hover {
+  background: rgba(15, 23, 48, 0.55);
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: rotate(-45deg);
 }
 
-.spawn-limit-note {
-  margin: 0 0 16px;
-  color: #4c4c4c;
+.arena-restart:active {
+  transform: rotate(-90deg) scale(0.95);
+}
+
+.arena-restart__icon {
+  width: 58%;
+  height: 58%;
+  display: block;
+}
+
+/* ----------------------------------------------------------
+   Power-up activation burst — quick centered flash that
+   appears when a transient power-up fires.
+   ---------------------------------------------------------- */
+.powerup-burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.powerup-burst__content {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.6vmin, 16px);
+  font-weight: 900;
+  font-size: clamp(38px, 8vmin, 84px);
+  letter-spacing: 0.04em;
+  color: var(--burst-color);
+  -webkit-text-stroke: 2.5px #0a0f1c;
+  paint-order: stroke fill;
+  text-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.4),
+    0 0 22px var(--burst-glow);
+  white-space: nowrap;
+  animation: powerup-burst 0.6s cubic-bezier(0.18, 1.1, 0.55, 1) forwards;
+}
+
+.powerup-burst__icon,
+.powerup-burst__big-icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.powerup-burst__icon {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.powerup-burst__big-icon {
+  width: 1.6em;
+  height: 1.6em;
+}
+
+.powerup-burst__icon svg,
+.powerup-burst__big-icon svg {
+  width: 100%;
+  height: 100%;
+  filter:
+    drop-shadow(1.5px 0 0 #0a0f1c)
+    drop-shadow(-1.5px 0 0 #0a0f1c)
+    drop-shadow(0 1.5px 0 #0a0f1c)
+    drop-shadow(0 -1.5px 0 #0a0f1c)
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 14px var(--burst-glow));
+}
+
+.powerup-burst--plusten {
+  --burst-color: #047857;
+  --burst-glow: rgba(16, 185, 129, 0.7);
+}
+
+.powerup-burst--speed {
+  --burst-color: #c2410c;
+  --burst-glow: rgba(234, 88, 12, 0.75);
+}
+
+.powerup-burst--shuffle {
+  --burst-color: #6d28d9;
+  --burst-glow: rgba(124, 58, 237, 0.75);
+}
+
+@keyframes powerup-burst {
+  0%   { opacity: 0; transform: scale(0.55); }
+  25%  { opacity: 1; transform: scale(1.2); }
+  65%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
 }
 
 .game-container {
   position: relative;
   width: 600px;
   height: 600px;
-  border: 2px solid #333;
-  margin: 0 auto;
-  background-color: #f9f9f9;
-}
-
-.magnet-anchor {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 76px;
-  height: 76px;
-  transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.magnet-anchor::before {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  border-radius: 999px;
   background:
-    radial-gradient(circle, rgba(89, 168, 255, 0.18) 0%, rgba(89, 168, 255, 0.08) 48%, rgba(89, 168, 255, 0) 76%);
-  animation: magnet-pulse 1.1s ease-in-out infinite;
+    radial-gradient(circle at center, #fafbff 0%, #e6e9f2 100%);
+  overflow: hidden;
 }
 
-.magnet-anchor__icon {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 0 10px rgba(67, 123, 214, 0.35));
-}
-
+/* shuffle flash overlay */
 .game-container--shuffle-flash::after {
   content: "";
   position: absolute;
@@ -89,6 +394,38 @@
   z-index: 1;
 }
 
+/* magnet anchor */
+.magnet-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 3;
+  animation: magnet-enter 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.magnet-anchor::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(89, 168, 255, 0.22) 0%, rgba(89, 168, 255, 0.1) 48%, rgba(89, 168, 255, 0) 76%);
+  animation: magnet-pulse 1.1s ease-in-out infinite;
+}
+
+.magnet-anchor__icon {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 10px rgba(67, 123, 214, 0.45));
+}
+
+/* pieces */
 .rps-piece {
   position: absolute;
   display: grid;
@@ -127,8 +464,8 @@
 }
 
 .rps-piece--cjp {
-  --spawn-glow-soft: rgba(92, 52, 23, 0.34);
-  --spawn-glow-strong: rgba(92, 52, 23, 0.78);
+  --spawn-glow-soft: rgba(192, 138, 91, 0.34);
+  --spawn-glow-strong: rgba(192, 138, 91, 0.78);
 }
 
 .rps-piece--bjp {
@@ -141,7 +478,6 @@
   --spawn-glow-strong: rgba(45, 143, 91, 0.8);
 }
 
-/* Styling for each image */
 .rps-image {
   width: 100%;
   height: 100%;
@@ -149,130 +485,538 @@
   pointer-events: none;
 }
 
-@keyframes spawn-backdrop {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1.18);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.55);
-  }
+/* ----------------------------------------------------------
+   Power-up rail
+   ---------------------------------------------------------- */
+.powerup-rail {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(6px, 1.2vmin, 10px);
 }
 
-@keyframes spawn-ring {
-  0% {
-    opacity: 0;
-    transform: scale(0.35);
-  }
-  18% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  46% {
-    opacity: 1;
-    transform: scale(1.18);
-  }
-  70% {
-    opacity: 0.8;
-    transform: scale(1.08);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.36);
-  }
+.powerup-button {
+  --powerup-accent: #6c8cff;
+  --powerup-accent-rgb: 108, 140, 255;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: clamp(8px, 1.6vmin, 12px) clamp(6px, 1.4vmin, 10px);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--powerup-accent-rgb), 0.16) 0%,
+    rgba(var(--powerup-accent-rgb), 0.05) 100%
+  );
+  border: 1px solid rgba(var(--powerup-accent-rgb), 0.32);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s,
+    box-shadow 0.18s, opacity 0.15s;
+  min-width: 0;
+  overflow: hidden;
 }
 
-@keyframes shuffle-flash {
-  0% {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  35% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.03);
-  }
+.powerup-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 130%,
+    rgba(var(--powerup-accent-rgb), 0.35) 0%,
+    rgba(var(--powerup-accent-rgb), 0) 60%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
 }
 
-@keyframes magnet-pulse {
-  0% {
-    opacity: 0.55;
-    transform: scale(0.92);
+.powerup-button:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--powerup-accent-rgb), 0.28) 0%,
+    rgba(var(--powerup-accent-rgb), 0.1) 100%
+  );
+  border-color: rgba(var(--powerup-accent-rgb), 0.6);
+  box-shadow:
+    0 0 0 1px rgba(var(--powerup-accent-rgb), 0.18),
+    0 10px 24px rgba(var(--powerup-accent-rgb), 0.22);
+  transform: translateY(-2px);
+}
+
+.powerup-button:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.powerup-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.powerup-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.powerup-button__icon {
+  width: clamp(22px, 3.4vmin, 30px);
+  height: clamp(22px, 3.4vmin, 30px);
+  color: var(--powerup-accent);
+  filter: drop-shadow(0 0 6px rgba(var(--powerup-accent-rgb), 0.55));
+  display: grid;
+  place-items: center;
+}
+
+.powerup-button__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.powerup-button__label {
+  font-weight: 800;
+  font-size: clamp(12px, 1.9vmin, 15px);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+/* Count badge — pinned to the bottom-right corner of each power-up button.
+   Shows the uses left as a small pill, or the cooldown timer during recharge. */
+.powerup-button__meta {
+  position: absolute;
+  bottom: clamp(4px, 0.8vmin, 7px);
+  right: clamp(5px, 0.9vmin, 8px);
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--powerup-accent);
+  font-size: clamp(10px, 1.3vmin, 12px);
+  font-weight: 700;
+  line-height: 1;
+  min-width: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.powerup-button__meta-unit {
+  display: none;
+}
+
+/* Per-power-up color themes */
+.powerup-button--plusten {
+  --powerup-accent: #34d399;
+  --powerup-accent-rgb: 52, 211, 153;
+}
+
+.powerup-button--speed {
+  --powerup-accent: #fbbf24;
+  --powerup-accent-rgb: 251, 191, 36;
+}
+
+.powerup-button--shuffle {
+  --powerup-accent: #a78bfa;
+  --powerup-accent-rgb: 167, 139, 250;
+}
+
+.powerup-button--magnet {
+  --powerup-accent: #60a5fa;
+  --powerup-accent-rgb: 96, 165, 250;
+}
+
+/* Active state — uses the button's own accent for the glow */
+.powerup-button.powerup-button--active {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--powerup-accent-rgb), 0.4) 0%,
+    rgba(var(--powerup-accent-rgb), 0.15) 100%
+  );
+  border-color: var(--powerup-accent);
+  box-shadow:
+    0 0 0 2px rgba(var(--powerup-accent-rgb), 0.35),
+    0 0 24px rgba(var(--powerup-accent-rgb), 0.5);
+  animation: powerup-active-pulse 1.8s ease-in-out infinite;
+}
+
+.powerup-button.powerup-button--active .powerup-button__meta {
+  color: var(--powerup-accent);
+}
+
+@keyframes powerup-active-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(var(--powerup-accent-rgb), 0.3),
+      0 0 18px rgba(var(--powerup-accent-rgb), 0.4);
   }
   50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-  100% {
-    opacity: 0.55;
-    transform: scale(0.92);
+    box-shadow:
+      0 0 0 2px rgba(var(--powerup-accent-rgb), 0.45),
+      0 0 30px rgba(var(--powerup-accent-rgb), 0.65);
   }
 }
 
-/* Popup overlay */
-.popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.popup-content {
-  background: white;
-  padding: 20px 40px;
-  border-radius: 8px;
-  text-align: center;
-  color: #333;
-}
-
-.popup-content h2 {
-  margin-top: 0;
-}
-
-.popup-content button {
-  margin-top: 15px;
-  padding: 10px 20px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
+/* ----------------------------------------------------------
+   Start overlay — premium intro screen
+   ---------------------------------------------------------- */
 .start-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.85);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vmin, 32px);
+  background:
+    radial-gradient(circle at center, rgba(15, 23, 48, 0.78) 0%, rgba(5, 8, 20, 0.92) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+  animation: overlay-fade-in 0.4s ease-out;
+}
+
+.start-overlay__content {
+  text-align: center;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: clamp(6px, 1.2vmin, 10px);
+  max-width: 92%;
+}
+
+.start-overlay__eyebrow {
+  font-size: clamp(10px, 1.3vmin, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.36em;
+  color: var(--color-text-dim);
+}
+
+.start-overlay__title {
+  margin: 0;
+  font-size: clamp(28px, 6vmin, 48px);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  background: linear-gradient(135deg, #f0861d 0%, #ef4444 45%, #6c8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.start-overlay__tagline {
+  margin: 0;
+  font-size: clamp(12px, 1.8vmin, 15px);
+  color: var(--color-text-dim);
+}
+
+.start-overlay__hint {
+  margin: clamp(6px, 1.2vmin, 10px) 0 0;
+  font-size: clamp(10px, 1.3vmin, 12px);
+  color: var(--color-text-muted);
 }
 
 .start-button {
-  padding: 14px 36px;
-  font-size: 1.3rem;
-  font-weight: bold;
+  margin-top: clamp(10px, 2vmin, 18px);
+  padding: clamp(12px, 2.2vmin, 16px) clamp(28px, 4.2vmin, 44px);
+  font-size: clamp(14px, 2.1vmin, 17px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  border: 2px solid #333;
-  border-radius: 8px;
-  background: #fff;
-  color: #333;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
+  color: #fff;
+  box-shadow:
+    0 12px 28px rgba(79, 108, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
 
 .start-button:hover {
-  background: #333;
-  color: #fff;
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 36px rgba(79, 108, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  filter: brightness(1.05);
+}
+
+.start-button:active {
+  transform: translateY(0);
+}
+
+/* ----------------------------------------------------------
+   Game-over popup
+   ---------------------------------------------------------- */
+.popup {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vmin, 24px);
+  background: rgba(5, 8, 20, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+  animation: overlay-fade-in 0.35s ease-out;
+}
+
+.popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(22px, 4vmin, 38px) clamp(26px, 5vmin, 48px);
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(145deg, rgba(40, 50, 75, 0.95) 0%, rgba(20, 28, 48, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6);
+  max-width: min(420px, 92vw);
+  animation: popup-pop 0.4s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.popup-content__eyebrow {
+  font-size: clamp(10px, 1.4vmin, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.36em;
+  color: var(--color-text-dim);
+}
+
+.popup-content h2 {
+  margin: 0;
+  font-size: clamp(26px, 5vmin, 40px);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.popup-content p {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: clamp(12px, 1.7vmin, 14px);
+}
+
+/* ----------------------------------------------------------
+   Animations
+   ---------------------------------------------------------- */
+@keyframes spawn-backdrop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  30%  { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+@keyframes spawn-ring {
+  0%   { opacity: 0; transform: scale(0.35); }
+  18%  { opacity: 1; transform: scale(1); }
+  46%  { opacity: 1; transform: scale(1.18); }
+  70%  { opacity: 0.8; transform: scale(1.08); }
+  100% { opacity: 0; transform: scale(1.36); }
+}
+
+@keyframes shuffle-flash {
+  0%   { opacity: 0; transform: scale(0.96); }
+  35%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+
+@keyframes magnet-pulse {
+  0%   { opacity: 0.55; transform: scale(0.92); }
+  50%  { opacity: 1;    transform: scale(1.08); }
+  100% { opacity: 0.55; transform: scale(0.92); }
+}
+
+@keyframes magnet-enter {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes popup-pop {
+  0%   { opacity: 0; transform: scale(0.85) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ----------------------------------------------------------
+   Responsive — mobile + landscape phones
+   ---------------------------------------------------------- */
+
+/* Wide screens (desktop / large tablets):
+   Arena on the left, power-up rail as a vertical column on the right. */
+@media (min-width: 760px) {
+  .game-shell__panel {
+    max-width: 900px;
+  }
+
+  .play-row {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(14px, 2vmin, 22px);
+    width: 100%;
+  }
+
+  .arena-frame {
+    --arena-size: min(640px, 82vmin, calc(100dvh - 200px));
+    flex-shrink: 0;
+  }
+
+  .powerup-rail {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: clamp(10px, 1.4vmin, 14px);
+    width: clamp(130px, 16vmin, 160px);
+    flex-shrink: 0;
+  }
+
+  .powerup-button {
+    padding: clamp(12px, 1.8vmin, 18px) clamp(10px, 1.5vmin, 14px);
+    gap: 6px;
+  }
+
+  .powerup-button__icon {
+    width: clamp(30px, 4vmin, 38px);
+    height: clamp(30px, 4vmin, 38px);
+  }
+}
+
+/* Tablets / smaller laptops */
+@media (max-width: 720px) {
+  .arena-frame {
+    --arena-size: min(640px, 94vmin, calc(100dvh - 240px));
+  }
+}
+
+/* Phones (portrait) */
+@media (max-width: 480px) {
+  .game-shell {
+    padding: 8px 12px;
+  }
+
+  .app-header {
+    padding-bottom: 8px;
+  }
+
+  .brand__eyebrow {
+    display: none;
+  }
+
+  .brand h1 {
+    font-size: 18px;
+  }
+
+  .ghost-button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .score-card {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .score-card__icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .score-card__count {
+    font-size: 18px;
+  }
+
+  .arena-frame {
+    --arena-size: min(96vw, calc(100dvh - 240px));
+  }
+
+  .powerup-button {
+    padding: 12px 6px;
+  }
+
+  .powerup-button__label {
+    display: none;
+  }
+
+  .powerup-button__icon {
+    width: clamp(28px, 8vmin, 36px);
+    height: clamp(28px, 8vmin, 36px);
+  }
+}
+
+/* Tall portrait screens — let the arena grow on tall viewports. */
+@media (min-height: 820px) {
+  .arena-frame {
+    --arena-size: min(760px, 94vmin, calc(100dvh - 220px));
+  }
+}
+
+@media (min-height: 1100px) {
+  .arena-frame {
+    --arena-size: min(840px, 94vmin, calc(100dvh - 240px));
+  }
+}
+
+/* Very small / short screens */
+@media (max-height: 620px) {
+  .arena-frame {
+    --arena-size: min(440px, calc(100dvh - 180px));
+  }
+
+  .brand__eyebrow {
+    display: none;
+  }
+}
+
+/* Landscape phones — header stays on top, panel uses a 3-column grid. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .game-shell {
+    padding: 6px 12px;
+  }
+
+  .app-header {
+    padding-bottom: 4px;
+  }
+
+  .brand__eyebrow {
+    display: none;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .game-shell__panel {
+    max-width: none;
+    padding: 4px 0;
+    display: grid;
+    grid-template-columns: minmax(170px, 220px) auto minmax(170px, 220px);
+    grid-template-rows: auto;
+    grid-template-areas: "score arena powerups";
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  /* Flatten the .play-row wrapper so arena and powerups participate
+     directly in the panel grid. */
+  .play-row {
+    display: contents;
+  }
+
+  .game-shell__panel > .scoreboard,
+  .play-row > .arena-frame,
+  .play-row > .powerup-rail {
+    margin: 0;
+  }
+
+  .scoreboard   { grid-area: score; grid-template-columns: 1fr; }
+  .arena-frame  { grid-area: arena; --arena-size: min(94vmin, calc(100dvh - 60px)); }
+  .powerup-rail {
+    grid-area: powerups;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    width: auto;
+  }
 }
