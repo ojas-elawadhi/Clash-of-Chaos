@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">Magnet power-up</title>
+  <desc id="desc">A stylized horseshoe magnet for the center pull power-up.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 25h18v38c0 12 7 20 18 20s18-8 18-20V25h18v40c0 24-18 42-36 42S34 89 34 65V25Z" fill="#d94a4a" stroke="#8d1f1f" stroke-width="6" />
+    <path d="M34 25h18v18H34Z" fill="#f2f5fb" stroke="#8d1f1f" stroke-width="6" />
+    <path d="M88 25h18v18H88Z" fill="#f2f5fb" stroke="#8d1f1f" stroke-width="6" />
+    <path d="M52 25v38c0 12 7 20 18 20" stroke="#ffffff" stroke-width="4" opacity="0.5" />
+  </g>
+</svg>

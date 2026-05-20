@@ -4,10 +4,18 @@ import "./RockPaperScissorsGame.css";
 const BOX_SIZE = 600;
 const IMAGE_SIZE = 40;
 const INITIAL_PER_TYPE = 33;
-const MAX_ADDITIONS_PER_TYPE = 12;
 const BASE_SPEED = 0.3;
 const SPAWN_ANIMATION_MS = 900;
 const SPAWN_PROTECTION_MS = 1000;
+const SHUFFLE_PROTECTION_MS = 750;
+const GLOBAL_COOLDOWN_MS = 3000;
+const SPEED_BOOST_MS = 3000;
+const SPEED_BOOST_MULTIPLIER = 2;
+const MAGNET_MS = 2000;
+const MAGNET_PULL_STRENGTH = 0.7;
+const SHUFFLE_FLASH_MS = 500;
+const PLUS_TEN_AMOUNT = 10;
+const COOLDOWN_TICK_MS = 100;
 
 const PARTY_CONFIG = {
   cjp: {
@@ -31,6 +39,25 @@ const PARTY_CONFIG = {
 };
 
 const TYPES = Object.keys(PARTY_CONFIG);
+const POWER_UP_CONFIG = {
+  plusTen: {
+    label: "+10",
+    maxUses: 5,
+  },
+  speed: {
+    label: "Speed",
+    maxUses: 5,
+  },
+  shuffle: {
+    label: "Shuffle",
+    maxUses: 2,
+  },
+  magnet: {
+    label: "Magnet",
+    maxUses: 2,
+  },
+};
+const POWER_UPS = Object.keys(POWER_UP_CONFIG);
 
 const STARTING_ZONES = {
   cjp: {
@@ -59,7 +86,15 @@ const createEmptyCounts = () =>
     return counts;
   }, {});
 
+const createEmptyPowerUpUses = () =>
+  POWER_UPS.reduce((uses, powerUp) => {
+    uses[powerUp] = 0;
+    return uses;
+  }, {});
+
 const randRange = (min, max) => Math.random() * (max - min) + min;
+const randInt = (min, max) => Math.floor(randRange(min, max + 1));
+const getRandomType = () => TYPES[randInt(0, TYPES.length - 1)];
 
 const getRandomVelocity = () => {
   const angle = Math.random() * Math.PI * 2;
@@ -120,10 +155,21 @@ const RockPaperScissorsGame = () => {
   const [images, setImages] = useState(createInitialImages);
   const [gameOver, setGameOver] = useState(null);
   const [started, setStarted] = useState(false);
-  const [additionCounts, setAdditionCounts] = useState(createEmptyCounts);
+  const [powerUpUses, setPowerUpUses] = useState(createEmptyPowerUpUses);
+  const [powerUpCooldownActive, setPowerUpCooldownActive] = useState(false);
+  const [cooldownRemainingMs, setCooldownRemainingMs] = useState(0);
+  const [speedBoostActive, setSpeedBoostActive] = useState(false);
+  const [magnetActive, setMagnetActive] = useState(false);
+  const [shuffleFlashActive, setShuffleFlashActive] = useState(false);
   const animationRef = useRef(null);
   const nextIdRef = useRef(INITIAL_PER_TYPE);
-  const additionCountsRef = useRef(createEmptyCounts());
+  const powerUpUsesRef = useRef(createEmptyPowerUpUses());
+  const powerUpCooldownTimerRef = useRef(null);
+  const powerUpCooldownIntervalRef = useRef(null);
+  const powerUpCooldownEndsAtRef = useRef(0);
+  const speedBoostTimerRef = useRef(null);
+  const magnetTimerRef = useRef(null);
+  const shuffleFlashTimerRef = useRef(null);
 
   const isColliding = (a, b) => {
     const dx = a.x - b.x;
@@ -132,16 +178,40 @@ const RockPaperScissorsGame = () => {
   };
 
   useEffect(() => {
+    return () => {
+      clearTimeout(powerUpCooldownTimerRef.current);
+      clearInterval(powerUpCooldownIntervalRef.current);
+      clearTimeout(speedBoostTimerRef.current);
+      clearTimeout(magnetTimerRef.current);
+      clearTimeout(shuffleFlashTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!started || gameOver) return undefined;
 
     const updatePositions = () => {
       setImages((prevImages) => {
         const now = Date.now();
         const newImages = prevImages.map((img) => ({ ...img }));
+        const speedMultiplier = speedBoostActive ? SPEED_BOOST_MULTIPLIER : 1;
+        const magnetTargetX = BOX_SIZE / 2 - IMAGE_SIZE / 2;
+        const magnetTargetY = BOX_SIZE / 2 - IMAGE_SIZE / 2;
 
         newImages.forEach((img) => {
-          img.x += img.vx;
-          img.y += img.vy;
+          img.x += img.vx * speedMultiplier;
+          img.y += img.vy * speedMultiplier;
+
+          if (magnetActive) {
+            const dx = magnetTargetX - img.x;
+            const dy = magnetTargetY - img.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 1) {
+              img.x += (dx / distance) * MAGNET_PULL_STRENGTH;
+              img.y += (dy / distance) * MAGNET_PULL_STRENGTH;
+            }
+          }
 
           if (img.x <= 0 || img.x + IMAGE_SIZE >= BOX_SIZE) {
             img.vx = -img.vx;
@@ -165,23 +235,44 @@ const RockPaperScissorsGame = () => {
 
         const isProtected = (img) =>
           Boolean(img.protectedUntil && now < img.protectedUntil);
+        const nextTypes = new Map();
+        const resolvedIndices = new Set();
 
         for (let i = 0; i < newImages.length; i += 1) {
           for (let j = i + 1; j < newImages.length; j += 1) {
-            if (isProtected(newImages[i]) || isProtected(newImages[j])) {
+            if (
+              isProtected(newImages[i]) ||
+              isProtected(newImages[j]) ||
+              resolvedIndices.has(i) ||
+              resolvedIndices.has(j)
+            ) {
               continue;
             }
 
             if (isColliding(newImages[i], newImages[j])) {
+              const typeA = nextTypes.get(i) ?? newImages[i].type;
+              const typeB = nextTypes.get(j) ?? newImages[j].type;
+
+              if (typeA === typeB) {
+                continue;
+              }
+
               const winnerType = getWinnerType(
-                newImages[i].type,
-                newImages[j].type
+                typeA,
+                typeB
               );
-              newImages[i].type = winnerType;
-              newImages[j].type = winnerType;
+
+              nextTypes.set(i, winnerType);
+              nextTypes.set(j, winnerType);
+              resolvedIndices.add(i);
+              resolvedIndices.add(j);
             }
           }
         }
+
+        nextTypes.forEach((type, index) => {
+          newImages[index].type = type;
+        });
 
         const counts = countImagesByType(newImages);
         const activeTypes = TYPES.filter((type) => counts[type] > 0);
@@ -202,47 +293,150 @@ const RockPaperScissorsGame = () => {
 
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [gameOver, started]);
+  }, [gameOver, magnetActive, speedBoostActive, started]);
+
+  const startSharedCooldown = () => {
+    clearTimeout(powerUpCooldownTimerRef.current);
+    clearInterval(powerUpCooldownIntervalRef.current);
+    powerUpCooldownEndsAtRef.current = Date.now() + GLOBAL_COOLDOWN_MS;
+    setPowerUpCooldownActive(true);
+    setCooldownRemainingMs(GLOBAL_COOLDOWN_MS);
+
+    powerUpCooldownIntervalRef.current = setInterval(() => {
+      const remaining = Math.max(0, powerUpCooldownEndsAtRef.current - Date.now());
+      setCooldownRemainingMs(remaining);
+
+      if (remaining === 0) {
+        clearInterval(powerUpCooldownIntervalRef.current);
+      }
+    }, COOLDOWN_TICK_MS);
+
+    powerUpCooldownTimerRef.current = setTimeout(() => {
+      setPowerUpCooldownActive(false);
+      setCooldownRemainingMs(0);
+      clearInterval(powerUpCooldownIntervalRef.current);
+    }, GLOBAL_COOLDOWN_MS);
+  };
+
+  const registerPowerUpUse = (powerUp) => {
+    const nextUses = {
+      ...powerUpUsesRef.current,
+      [powerUp]: powerUpUsesRef.current[powerUp] + 1,
+    };
+
+    powerUpUsesRef.current = nextUses;
+    setPowerUpUses(nextUses);
+    startSharedCooldown();
+  };
+
+  const createSpawnedBatch = (count, getRanges) => {
+    const createdAt = Date.now();
+
+    return Array.from({ length: count }, () => {
+      const type = getRandomType();
+      const { xRange, yRange } = getRanges(type);
+      const image = createImage(type, nextIdRef.current++, xRange, yRange, true);
+      image.spawnedAt = createdAt;
+      image.protectedUntil = createdAt + SPAWN_PROTECTION_MS;
+      return image;
+    });
+  };
+
+  const spawnRandomObjects = (count) => {
+    const newImages = createSpawnedBatch(count, () => ({
+      xRange: [0, BOX_SIZE - IMAGE_SIZE],
+      yRange: [0, BOX_SIZE - IMAGE_SIZE],
+    }));
+
+    setImages((prevImages) => [...prevImages, ...newImages]);
+  };
+
+  const triggerSpeedBoost = () => {
+    clearTimeout(speedBoostTimerRef.current);
+    setSpeedBoostActive(true);
+    speedBoostTimerRef.current = setTimeout(() => {
+      setSpeedBoostActive(false);
+    }, SPEED_BOOST_MS);
+  };
+
+  const triggerMagnet = () => {
+    clearTimeout(magnetTimerRef.current);
+    setMagnetActive(true);
+    magnetTimerRef.current = setTimeout(() => {
+      setMagnetActive(false);
+    }, MAGNET_MS);
+  };
+
+  const shuffleAllObjects = () => {
+    const now = Date.now();
+    setShuffleFlashActive(true);
+    clearTimeout(shuffleFlashTimerRef.current);
+    shuffleFlashTimerRef.current = setTimeout(() => {
+      setShuffleFlashActive(false);
+    }, SHUFFLE_FLASH_MS);
+
+    setImages((prevImages) =>
+      prevImages.map((img) => ({
+        ...img,
+        x: randRange(0, BOX_SIZE - IMAGE_SIZE),
+        y: randRange(0, BOX_SIZE - IMAGE_SIZE),
+        isNew: false,
+        spawnedAt: null,
+        protectedUntil: now + SHUFFLE_PROTECTION_MS,
+      }))
+    );
+  };
+
+  const activatePowerUp = (powerUp) => {
+    if (gameOver || powerUpCooldownActive) return;
+    if (powerUpUsesRef.current[powerUp] >= POWER_UP_CONFIG[powerUp].maxUses) {
+      return;
+    }
+
+    if (powerUp === "plusTen") {
+      spawnRandomObjects(PLUS_TEN_AMOUNT);
+    }
+
+    if (powerUp === "speed") {
+      triggerSpeedBoost();
+    }
+
+    if (powerUp === "shuffle") {
+      shuffleAllObjects();
+    }
+
+    if (powerUp === "magnet") {
+      triggerMagnet();
+    }
+
+    registerPowerUpUse(powerUp);
+  };
 
   const restartGame = () => {
     cancelAnimationFrame(animationRef.current);
+    clearTimeout(powerUpCooldownTimerRef.current);
+    clearInterval(powerUpCooldownIntervalRef.current);
+    clearTimeout(speedBoostTimerRef.current);
+    clearTimeout(magnetTimerRef.current);
+    clearTimeout(shuffleFlashTimerRef.current);
     setImages(createInitialImages());
     setGameOver(null);
     setStarted(false);
     nextIdRef.current = INITIAL_PER_TYPE;
-    additionCountsRef.current = createEmptyCounts();
-    setAdditionCounts(createEmptyCounts());
-  };
-
-  const addImages = (typesToAdd) => {
-    if (gameOver) return;
-
-    const nextCounts = { ...additionCountsRef.current };
-    const spawnQueue = [];
-
-    typesToAdd.forEach((type) => {
-      if (nextCounts[type] < MAX_ADDITIONS_PER_TYPE) {
-        nextCounts[type] += 1;
-        spawnQueue.push(type);
-      }
-    });
-
-    if (spawnQueue.length === 0) return;
-
-    additionCountsRef.current = nextCounts;
-    setAdditionCounts(nextCounts);
-    setImages((prevImages) => [
-      ...prevImages,
-      ...spawnQueue.map((type) =>
-        createImage(type, nextIdRef.current++, undefined, undefined, true)
-      ),
-    ]);
+    powerUpUsesRef.current = createEmptyPowerUpUses();
+    setPowerUpUses(createEmptyPowerUpUses());
+    setPowerUpCooldownActive(false);
+    powerUpCooldownEndsAtRef.current = 0;
+    setCooldownRemainingMs(0);
+    setSpeedBoostActive(false);
+    setMagnetActive(false);
+    setShuffleFlashActive(false);
   };
 
   const counts = countImagesByType(images);
-  const canAddType = (type) => additionCounts[type] < MAX_ADDITIONS_PER_TYPE;
-  const canAddAll = TYPES.every((type) => canAddType(type));
-  const getAddsLeft = (type) => MAX_ADDITIONS_PER_TYPE - additionCounts[type];
+  const getUsesLeft = (powerUp) =>
+    POWER_UP_CONFIG[powerUp].maxUses - powerUpUses[powerUp];
+  const cooldownSeconds = (cooldownRemainingMs / 1000).toFixed(1);
 
   return (
     <div className="game-wrapper">
@@ -262,30 +456,36 @@ const RockPaperScissorsGame = () => {
       </header>
 
       <div className="spawn-controls">
-        <button
-          type="button"
-          onClick={() => addImages(TYPES)}
-          disabled={!canAddAll || gameOver}
-        >
-          Add All
-        </button>
-        {TYPES.map((type) => (
+        {POWER_UPS.map((powerUp) => (
           <button
-            key={type}
+            key={powerUp}
             type="button"
-            onClick={() => addImages([type])}
-            disabled={!canAddType(type) || gameOver}
+            className={
+              (powerUp === "speed" && speedBoostActive) ||
+              (powerUp === "magnet" && magnetActive)
+                ? "powerup-button powerup-button--active"
+                : "powerup-button"
+            }
+            onClick={() => activatePowerUp(powerUp)}
+            disabled={
+              gameOver ||
+              powerUpCooldownActive ||
+              powerUpUses[powerUp] >= POWER_UP_CONFIG[powerUp].maxUses
+            }
           >
-            Add {PARTY_CONFIG[type].label} ({getAddsLeft(type)} left)
+            {powerUpCooldownActive
+              ? `${POWER_UP_CONFIG[powerUp].label} (${cooldownSeconds}s)`
+              : `${POWER_UP_CONFIG[powerUp].label} (${getUsesLeft(powerUp)} left)`}
           </button>
         ))}
       </div>
 
-      <p className="spawn-limit-note">
-        Each party can be added up to {MAX_ADDITIONS_PER_TYPE} extra times.
-      </p>
-
-      <div className="game-container">
+      <div className={`game-container ${shuffleFlashActive ? "game-container--shuffle-flash" : ""}`}>
+        {magnetActive && (
+          <div className="magnet-anchor">
+            <img src="/magnet.svg" alt="Magnet power-up" className="magnet-anchor__icon" />
+          </div>
+        )}
         {images.map((img) => (
           <div
             key={img.id}
