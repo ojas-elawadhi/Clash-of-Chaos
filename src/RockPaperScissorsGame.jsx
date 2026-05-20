@@ -498,8 +498,17 @@ import "./RockPaperScissorsGame.css";
 
 const BOX_SIZE = 600; // Container size in pixels
 const IMAGE_SIZE = 40; // Image dimensions in pixels
-const TOTAL_PER_TYPE = 33; // 33 images for each type (total 99)
+const INITIAL_PER_TYPE = 33; // 33 images for each type (total 99)
+const MAX_ADDITIONS_PER_TYPE = 12; // Max extra spawns per type
 const BASE_SPEED = 0.3; // Base speed for movement
+const SPAWN_ANIMATION_MS = 900; // Visual highlight duration for new pieces
+const SPAWN_PROTECTION_MS = 1000; // New pieces ignore conversions briefly
+const TYPES = ["rock", "paper", "scissors"];
+const INITIAL_ADDITION_COUNTS = {
+  rock: 0,
+  paper: 0,
+  scissors: 0,
+};
 
 // RPS rules: returns the winning type given two types.
 const getWinnerType = (typeA, typeB) => {
@@ -525,6 +534,36 @@ const getRandomVelocity = () => {
   return { vx, vy };
 };
 
+const createImage = (
+  type,
+  id,
+  xRange = [0, BOX_SIZE - IMAGE_SIZE],
+  yRange = [0, BOX_SIZE - IMAGE_SIZE],
+  isNew = false
+) => {
+  const { vx, vy } = getRandomVelocity();
+  return {
+    id: `img-${type}-${id}`,
+    type,
+    x: randRange(...xRange),
+    y: randRange(...yRange),
+    vx,
+    vy,
+    isNew,
+    spawnedAt: isNew ? Date.now() : null,
+    protectedUntil: isNew ? Date.now() + SPAWN_PROTECTION_MS : 0,
+  };
+};
+
+const countImagesByType = (images) =>
+  images.reduce(
+    (counts, img) => {
+      counts[img.type] += 1;
+      return counts;
+    },
+    { rock: 0, paper: 0, scissors: 0 }
+  );
+
 // Create initial images with fixed starting positions per type.
 // - Scissors: middle top
 // - Rock: bottom left
@@ -533,42 +572,39 @@ const createInitialImages = () => {
   const images = [];
 
   // Scissors group (middle top)
-  for (let i = 0; i < TOTAL_PER_TYPE; i++) {
-    const { vx, vy } = getRandomVelocity();
-    images.push({
-      id: `img-scissors-${i}`,
-      type: "scissors",
-      x: randRange(BOX_SIZE / 2 - 75, BOX_SIZE / 2 + 75),
-      y: randRange(10, 80),
-      vx,
-      vy,
-    });
+  for (let i = 0; i < INITIAL_PER_TYPE; i++) {
+    images.push(
+      createImage(
+        "scissors",
+        i,
+        [BOX_SIZE / 2 - 75, BOX_SIZE / 2 + 75],
+        [10, 80]
+      )
+    );
   }
 
   // Rock group (bottom left)
-  for (let i = 0; i < TOTAL_PER_TYPE; i++) {
-    const { vx, vy } = getRandomVelocity();
-    images.push({
-      id: `img-rock-${i}`,
-      type: "rock",
-      x: randRange(10, 100),
-      y: randRange(BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE),
-      vx,
-      vy,
-    });
+  for (let i = 0; i < INITIAL_PER_TYPE; i++) {
+    images.push(
+      createImage(
+        "rock",
+        i,
+        [10, 100],
+        [BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE]
+      )
+    );
   }
 
   // Paper group (bottom right)
-  for (let i = 0; i < TOTAL_PER_TYPE; i++) {
-    const { vx, vy } = getRandomVelocity();
-    images.push({
-      id: `img-paper-${i}`,
-      type: "paper",
-      x: randRange(BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE),
-      y: randRange(BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE),
-      vx,
-      vy,
-    });
+  for (let i = 0; i < INITIAL_PER_TYPE; i++) {
+    images.push(
+      createImage(
+        "paper",
+        i,
+        [BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE],
+        [BOX_SIZE - 150, BOX_SIZE - IMAGE_SIZE]
+      )
+    );
   }
   return images;
 };
@@ -576,7 +612,11 @@ const createInitialImages = () => {
 const RockPaperScissorsGame = () => {
   const [images, setImages] = useState(createInitialImages());
   const [gameOver, setGameOver] = useState(null); // null means game is running
+  const [started, setStarted] = useState(false);
+  const [additionCounts, setAdditionCounts] = useState(INITIAL_ADDITION_COUNTS);
   const animationRef = useRef(null);
+  const nextIdRef = useRef(INITIAL_PER_TYPE);
+  const additionCountsRef = useRef(INITIAL_ADDITION_COUNTS);
 
   // Helper: collision detection between two images (using circle approximation)
   const isColliding = (a, b) => {
@@ -585,88 +625,135 @@ const RockPaperScissorsGame = () => {
     return Math.sqrt(dx * dx + dy * dy) < IMAGE_SIZE;
   };
 
-  // Update positions of images, bounce off boundaries, and process collisions.
-  const updatePositions = () => {
-    setImages((prevImages) => {
-      const newImages = prevImages.map((img) => ({ ...img }));
+  useEffect(() => {
+    if (!started || gameOver) return;
 
-      // Update positions and bounce off walls.
-      newImages.forEach((img) => {
-        img.x += img.vx;
-        img.y += img.vy;
+    const updatePositions = () => {
+      setImages((prevImages) => {
+        const now = Date.now();
+        const newImages = prevImages.map((img) => ({ ...img }));
 
-        // Bounce off left/right boundaries.
-        if (img.x <= 0 || img.x + IMAGE_SIZE >= BOX_SIZE) {
-          img.vx = -img.vx;
-          img.x = Math.max(0, Math.min(img.x, BOX_SIZE - IMAGE_SIZE));
-        }
+        // Update positions and bounce off walls.
+        newImages.forEach((img) => {
+          img.x += img.vx;
+          img.y += img.vy;
+
+          // Bounce off left/right boundaries.
+          if (img.x <= 0 || img.x + IMAGE_SIZE >= BOX_SIZE) {
+            img.vx = -img.vx;
+            img.x = Math.max(0, Math.min(img.x, BOX_SIZE - IMAGE_SIZE));
+          }
         // Bounce off top/bottom boundaries.
         if (img.y <= 0 || img.y + IMAGE_SIZE >= BOX_SIZE) {
           img.vy = -img.vy;
           img.y = Math.max(0, Math.min(img.y, BOX_SIZE - IMAGE_SIZE));
         }
-      });
 
-      // Check for collisions and apply RPS logic.
-      for (let i = 0; i < newImages.length; i++) {
-        for (let j = i + 1; j < newImages.length; j++) {
-          if (isColliding(newImages[i], newImages[j])) {
-            const winnerType = getWinnerType(
-              newImages[i].type,
-              newImages[j].type
-            );
-            newImages[i].type = winnerType;
-            newImages[j].type = winnerType;
+          if (img.isNew && now - img.spawnedAt > SPAWN_ANIMATION_MS) {
+            img.isNew = false;
+            img.spawnedAt = null;
+          }
+
+          if (img.protectedUntil && now >= img.protectedUntil) {
+            img.protectedUntil = 0;
+          }
+        });
+
+        const isProtected = (img) => img.protectedUntil && now < img.protectedUntil;
+
+        // Check for collisions and apply RPS logic.
+        for (let i = 0; i < newImages.length; i++) {
+          for (let j = i + 1; j < newImages.length; j++) {
+            if (isProtected(newImages[i]) || isProtected(newImages[j])) {
+              continue;
+            }
+
+            if (isColliding(newImages[i], newImages[j])) {
+              const winnerType = getWinnerType(
+                newImages[i].type,
+                newImages[j].type
+              );
+              newImages[i].type = winnerType;
+              newImages[j].type = winnerType;
+            }
           }
         }
-      }
 
-      // Compute counts.
-      const rockCount = newImages.filter((img) => img.type === "rock").length;
-      const paperCount = newImages.filter((img) => img.type === "paper").length;
-      const scissorsCount = newImages.filter(
-        (img) => img.type === "scissors"
-      ).length;
+        // Compute counts.
+        const { rock: rockCount, paper: paperCount, scissors: scissorsCount } =
+          countImagesByType(newImages);
 
-      // Check for game over: if two types are reduced to 0.
-      if (
-        (rockCount === 0 && paperCount === 0) ||
-        (rockCount === 0 && scissorsCount === 0) ||
-        (paperCount === 0 && scissorsCount === 0)
-      ) {
-        const winner =
-          rockCount > 0 ? "rock" : paperCount > 0 ? "paper" : "scissors";
-        setGameOver({ winner, rockCount, paperCount, scissorsCount });
-        // Stop the animation loop.
-        cancelAnimationFrame(animationRef.current);
-      }
+        // Check for game over: if two types are reduced to 0.
+        if (
+          (rockCount === 0 && paperCount === 0) ||
+          (rockCount === 0 && scissorsCount === 0) ||
+          (paperCount === 0 && scissorsCount === 0)
+        ) {
+          const winner =
+            rockCount > 0 ? "rock" : paperCount > 0 ? "paper" : "scissors";
+          setGameOver({ winner, rockCount, paperCount, scissorsCount });
+          cancelAnimationFrame(animationRef.current);
+        }
 
-      return newImages;
-    });
-  };
+        return newImages;
+      });
+    };
 
-  const animate = () => {
-    updatePositions();
-    // Continue animation if game is not over.
-    animationRef.current = requestAnimationFrame(animate);
-  };
+    const animate = () => {
+      updatePositions();
+      animationRef.current = requestAnimationFrame(animate);
+    };
 
-  useEffect(() => {
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
-  }, []);
+  }, [gameOver, started]);
+
+  // Start the game.
+  const startGame = () => {
+    setStarted(true);
+  };
 
   // Restart the game to initial state.
   const restartGame = () => {
+    cancelAnimationFrame(animationRef.current);
     setImages(createInitialImages());
     setGameOver(null);
-    animationRef.current = requestAnimationFrame(animate);
+    setStarted(false);
+    nextIdRef.current = INITIAL_PER_TYPE;
+    additionCountsRef.current = INITIAL_ADDITION_COUNTS;
+    setAdditionCounts(INITIAL_ADDITION_COUNTS);
   };
 
+  const addImages = (typesToAdd) => {
+    if (gameOver) return;
+
+    const nextCounts = { ...additionCountsRef.current };
+    const spawnQueue = [];
+
+    typesToAdd.forEach((type) => {
+      if (nextCounts[type] < MAX_ADDITIONS_PER_TYPE) {
+        nextCounts[type] += 1;
+        spawnQueue.push(type);
+      }
+    });
+
+    if (spawnQueue.length === 0) return;
+
+    additionCountsRef.current = nextCounts;
+    setAdditionCounts(nextCounts);
+    setImages((prevImages) => [
+      ...prevImages,
+      ...spawnQueue.map((type) => createImage(type, nextIdRef.current++, undefined, undefined, true)),
+    ]);
+  };
+
+  const canAddType = (type) => additionCounts[type] < MAX_ADDITIONS_PER_TYPE;
+  const canAddAll = TYPES.every((type) => canAddType(type));
+  const getAddsLeft = (type) => MAX_ADDITIONS_PER_TYPE - additionCounts[type];
+
   // Compute current counts from images state.
-  const rockCount = images.filter((img) => img.type === "rock").length;
-  const paperCount = images.filter((img) => img.type === "paper").length;
-  const scissorsCount = images.filter((img) => img.type === "scissors").length;
+  const { rock: rockCount, paper: paperCount, scissors: scissorsCount } =
+    countImagesByType(images);
 
   return (
     <div className="game-wrapper">
@@ -691,13 +778,46 @@ const RockPaperScissorsGame = () => {
         </div>
       </header>
 
+      <div className="spawn-controls">
+        <button
+          type="button"
+          onClick={() => addImages(TYPES)}
+          disabled={!canAddAll || gameOver}
+        >
+          Add All
+        </button>
+        <button
+          type="button"
+          onClick={() => addImages(["rock"])}
+          disabled={!canAddType("rock") || gameOver}
+        >
+          Add Rock ({getAddsLeft("rock")} left)
+        </button>
+        <button
+          type="button"
+          onClick={() => addImages(["paper"])}
+          disabled={!canAddType("paper") || gameOver}
+        >
+          Add Paper ({getAddsLeft("paper")} left)
+        </button>
+        <button
+          type="button"
+          onClick={() => addImages(["scissors"])}
+          disabled={!canAddType("scissors") || gameOver}
+        >
+          Add Scissors ({getAddsLeft("scissors")} left)
+        </button>
+      </div>
+
+      <p className="spawn-limit-note">
+        Each type can be added up to {MAX_ADDITIONS_PER_TYPE} extra times.
+      </p>
+
       <div className="game-container">
         {images.map((img) => (
-          <img
+          <div
             key={img.id}
-            src={`/${img.type}.png`}
-            alt={img.type}
-            className="rps-image"
+            className={`rps-piece ${img.isNew ? `rps-piece--spawned rps-piece--${img.type}` : ""}`}
             style={{
               left: img.x,
               top: img.y,
@@ -705,8 +825,21 @@ const RockPaperScissorsGame = () => {
               height: IMAGE_SIZE,
               position: "absolute",
             }}
-          />
+          >
+            <img
+              src={`/${img.type}.png`}
+              alt={img.type}
+              className="rps-image"
+            />
+          </div>
         ))}
+        {!started && !gameOver && (
+          <div className="start-overlay">
+            <button className="start-button" onClick={startGame}>
+              Start
+            </button>
+          </div>
+        )}
       </div>
 
       {gameOver && (
