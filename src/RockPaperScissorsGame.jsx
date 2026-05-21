@@ -4,7 +4,7 @@ import "./RockPaperScissorsGame.css";
 const BOX_SIZE = 600;
 const IMAGE_SIZE = 40;
 const INITIAL_PER_TYPE = 33;
-const BASE_SPEED = 0.3;
+const BASE_SPEED = 0.69;
 const SPAWN_ANIMATION_MS = 900;
 const SPAWN_PROTECTION_MS = 1000;
 const SHUFFLE_PROTECTION_MS = 750;
@@ -149,9 +149,8 @@ const getRandomType = () => TYPES[randInt(0, TYPES.length - 1)];
 
 const getRandomVelocity = () => {
   const angle = Math.random() * Math.PI * 2;
-  const vx = BASE_SPEED * Math.cos(angle) + randRange(-0.3, 0.3);
-  const vy = BASE_SPEED * Math.sin(angle) + randRange(-0.3, 0.3);
-  return { vx, vy };
+  const speed = BASE_SPEED * randRange(0.9, 1.15);
+  return { vx: speed * Math.cos(angle), vy: speed * Math.sin(angle) };
 };
 
 const getWinnerType = (typeA, typeB) => {
@@ -672,11 +671,9 @@ const RockPaperScissorsGame = () => {
                     img.isNew ? `rps-piece--spawned rps-piece--${img.type}` : ""
                   }`}
                   style={{
-                    left: img.x,
-                    top: img.y,
+                    transform: `translate3d(${img.x}px, ${img.y}px, 0)`,
                     width: IMAGE_SIZE,
                     height: IMAGE_SIZE,
-                    position: "absolute",
                   }}
                 >
                   <img

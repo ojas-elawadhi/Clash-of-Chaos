@@ -501,9 +501,12 @@
 /* pieces */
 .rps-piece {
   position: absolute;
+  top: 0;
+  left: 0;
   display: grid;
   place-items: center;
   pointer-events: none;
+  will-change: transform;
 }
 
 .rps-piece::before,
