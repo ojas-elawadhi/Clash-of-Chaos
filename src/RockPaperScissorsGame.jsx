@@ -613,7 +613,7 @@ const RockPaperScissorsGame = () => {
           </div>
           <div className="brand__text">
             <span className="brand__eyebrow">Battle Royale</span>
-            <h1>CockroachClash</h1>
+            <h1>Cockroach Clash</h1>
           </div>
         </div>
       </header>
@@ -787,7 +787,7 @@ const RockPaperScissorsGame = () => {
             <div className="start-overlay">
               <div className="start-overlay__content">
                 <span className="start-overlay__eyebrow">New Round</span>
-                <h2 className="start-overlay__title">CockroachClash</h2>
+                <h2 className="start-overlay__title">Cockroach Clash</h2>
                 <p className="start-overlay__tagline">
                   {totalPieces} pieces. {TYPES.length} parties. One ruler.
                 </p>
