@@ -4,7 +4,7 @@ import "./RockPaperScissorsGame.css";
 const BOX_SIZE = 600;
 const IMAGE_SIZE = 40;
 const INITIAL_PER_TYPE = 33;
-const BASE_SPEED = 0.69;
+const BASE_SPEED = 0.39;
 const SPAWN_ANIMATION_MS = 900;
 const SPAWN_PROTECTION_MS = 1000;
 const SHUFFLE_PROTECTION_MS = 750;
@@ -149,7 +149,7 @@ const getRandomType = () => TYPES[randInt(0, TYPES.length - 1)];
 
 const getRandomVelocity = () => {
   const angle = Math.random() * Math.PI * 2;
-  const speed = BASE_SPEED * randRange(0.9, 1.15);
+  const speed = BASE_SPEED * randRange(0.8, 1.2);
   return { vx: speed * Math.cos(angle), vy: speed * Math.sin(angle) };
 };
 
