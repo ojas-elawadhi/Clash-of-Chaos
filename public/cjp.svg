@@ -1,7 +1,127 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#E0651E" stroke-width="3" stroke-dasharray="46 1000" transform="rotate(-90 32 32)"></circle>
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#1F5A2E" stroke-width="3" stroke-dasharray="46 1000" transform="rotate(30 32 32)"></circle>
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#1A1108" stroke-width="0.8"></circle>
-  <ellipse cx="32" cy="36" rx="11" ry="16" fill="#5A2F12"></ellipse>
-  <ellipse cx="32" cy="25" rx="7" ry="6" fill="#5A2F12"></ellipse>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cockroach">
+  <defs>
+    <radialGradient id="cjpAbdomen" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#9c5226" />
+      <stop offset="40%" stop-color="#6b3414" />
+      <stop offset="85%" stop-color="#3a1a06" />
+      <stop offset="100%" stop-color="#1f0d02" />
+    </radialGradient>
+    <radialGradient id="cjpShield" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#c47b3e" />
+      <stop offset="55%" stop-color="#7a3c16" />
+      <stop offset="100%" stop-color="#3d1c07" />
+    </radialGradient>
+    <radialGradient id="cjpHead" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#4a2208" />
+      <stop offset="100%" stop-color="#0e0501" />
+    </radialGradient>
+    <linearGradient id="cjpWingSeam" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#0a0400" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0a0400" stop-opacity="0.2" />
+    </linearGradient>
+    <radialGradient id="cjpHighlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d49562" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#d49562" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Antennae: long, curling, tapered -->
+  <path d="M28 13 Q22 8 16 5 Q10 3 6 5"
+        stroke="#160800" stroke-width="1.5" fill="none" stroke-linecap="round" />
+  <path d="M36 13 Q42 8 48 5 Q54 3 58 5"
+        stroke="#160800" stroke-width="1.5" fill="none" stroke-linecap="round" />
+  <!-- Antenna fine taper -->
+  <path d="M16 5 Q11 4 6 5" stroke="#2a1408" stroke-width="0.7" fill="none" stroke-linecap="round" opacity="0.8" />
+  <path d="M48 5 Q53 4 58 5" stroke="#2a1408" stroke-width="0.7" fill="none" stroke-linecap="round" opacity="0.8" />
+
+  <!-- Legs: jointed with femur, tibia, tarsus segments -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Front legs (shortest, forward) -->
+    <g stroke="#150701">
+      <path d="M25 21 L 16 17 L 9 18 L 5 22" stroke-width="2" />
+      <path d="M39 21 L 48 17 L 55 18 L 59 22" stroke-width="2" />
+      <!-- Tarsal tips -->
+      <path d="M5 22 L 3 24" stroke-width="1.1" />
+      <path d="M59 22 L 61 24" stroke-width="1.1" />
+    </g>
+    <!-- Middle legs (sideways) -->
+    <g stroke="#150701">
+      <path d="M23 32 L 12 33 L 5 36 L 2 40" stroke-width="2.2" />
+      <path d="M41 32 L 52 33 L 59 36 L 62 40" stroke-width="2.2" />
+      <path d="M2 40 L 1 42" stroke-width="1.2" />
+      <path d="M62 40 L 63 42" stroke-width="1.2" />
+    </g>
+    <!-- Rear legs (longest, sweep back) -->
+    <g stroke="#150701">
+      <path d="M25 43 L 14 47 L 7 53 L 4 60" stroke-width="2.4" />
+      <path d="M39 43 L 50 47 L 57 53 L 60 60" stroke-width="2.4" />
+      <path d="M4 60 L 2 62" stroke-width="1.3" />
+      <path d="M60 60 L 62 62" stroke-width="1.3" />
+    </g>
+    <!-- Tiny leg spines -->
+    <g stroke="#2a1408" stroke-width="0.6" opacity="0.7">
+      <path d="M14 47 L 13 49" />
+      <path d="M50 47 L 51 49" />
+      <path d="M12 33 L 11 35" />
+      <path d="M52 33 L 53 35" />
+    </g>
+  </g>
+
+  <!-- Abdomen / wing case -->
+  <path d="M32 23
+           C 22 23, 17 30, 17 42
+           C 17 53, 24 60, 32 60
+           C 40 60, 47 53, 47 42
+           C 47 30, 42 23, 32 23 Z"
+        fill="url(#cjpAbdomen)" />
+
+  <!-- Wing texture: subtle veining -->
+  <g stroke="#1a0a02" stroke-width="0.45" fill="none" opacity="0.55" stroke-linecap="round">
+    <path d="M24 30 Q21 40 24 54" />
+    <path d="M27 28 Q24 42 27 56" />
+    <path d="M40 30 Q43 40 40 54" />
+    <path d="M37 28 Q40 42 37 56" />
+  </g>
+
+  <!-- Wing seam down the middle -->
+  <path d="M32 25 L 32 59" stroke="url(#cjpWingSeam)" stroke-width="0.9" stroke-linecap="round" />
+
+  <!-- Abdomen segment hints near rear -->
+  <path d="M21 50 Q32 53 43 50" stroke="#0d0500" stroke-width="0.5" fill="none" opacity="0.55" />
+  <path d="M23 55 Q32 57 41 55" stroke="#0d0500" stroke-width="0.5" fill="none" opacity="0.5" />
+
+  <!-- Body highlight (back sheen) -->
+  <ellipse cx="28" cy="34" rx="3.5" ry="9" fill="url(#cjpHighlight)" />
+  <ellipse cx="36" cy="48" rx="2" ry="5" fill="url(#cjpHighlight)" opacity="0.5" />
+
+  <!-- Pronotum (shield behind head) -->
+  <path d="M32 14
+           C 24 14, 20 17, 20 22
+           C 20 26, 24 28, 32 28
+           C 40 28, 44 26, 44 22
+           C 44 17, 40 14, 32 14 Z"
+        fill="url(#cjpShield)" />
+  <!-- Pronotum dark center markings (characteristic of American cockroach) -->
+  <ellipse cx="32" cy="21" rx="3.4" ry="3.8" fill="#1a0a02" opacity="0.75" />
+  <ellipse cx="32" cy="20" rx="1.5" ry="2" fill="#0a0400" opacity="0.7" />
+  <!-- Pronotum glossy highlight -->
+  <ellipse cx="32" cy="17.5" rx="6" ry="1.3" fill="#e6a36a" opacity="0.55" />
+  <!-- Pronotum rim -->
+  <path d="M20 22 C 20 17, 24 14, 32 14 C 40 14, 44 17, 44 22"
+        stroke="#2a1408" stroke-width="0.5" fill="none" opacity="0.7" />
+
+  <!-- Head -->
+  <ellipse cx="32" cy="12" rx="4.2" ry="3.6" fill="url(#cjpHead)" />
+  <!-- Head highlight -->
+  <ellipse cx="32" cy="10.8" rx="2.4" ry="0.8" fill="#5c2c10" opacity="0.6" />
+
+  <!-- Compound eyes -->
+  <ellipse cx="29.5" cy="11.8" rx="1" ry="1.3" fill="#e8c890" />
+  <ellipse cx="34.5" cy="11.8" rx="1" ry="1.3" fill="#e8c890" />
+  <circle cx="29.5" cy="12" r="0.4" fill="#1a0a02" />
+  <circle cx="34.5" cy="12" r="0.4" fill="#1a0a02" />
+
+  <!-- Mandibles / mouth hint -->
+  <path d="M30.5 14.5 L 30 15.3" stroke="#1a0a02" stroke-width="0.5" stroke-linecap="round" />
+  <path d="M33.5 14.5 L 34 15.3" stroke="#1a0a02" stroke-width="0.5" stroke-linecap="round" />
 </svg>
